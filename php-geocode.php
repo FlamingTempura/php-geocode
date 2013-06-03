@@ -1,37 +1,28 @@
 <?php
 
-/*
-	Distances are within metres
-
-	for PHP < 5.3
-		Must have PHP ZipArchive installed and configured (http://php.net/manual/en/book.zip.php)
-
-	Set up by running
-		php import.php
-
-	Usage:
-
-	Geocode::connect($dsn, $username, $password)
-
-
-	Geocode::importGeonames($url = http://download.geonames.org/export/dump/cities1000.zip)
-		Import a Geonames data set, as found here: http://download.geonames.org/export/dump/
-
-	Reverse geocoding:
-		var geocode = new Geocode(lat, lng);
-		geocode->nearest(limit = 1);
-
-*/
-
 class Geocode {
 	public $args;
 	public function __construct () {
 		$this->args = func_get_args();
 	}
 
-	/**
-	* Reverse geocoding - returns closest geonames within radius
-	**/
+	// Geocoding - get latlng of city or town
+	public function latlng () {
+		if (count($this->args) > 1) {
+			self::$qLatLngCountry->execute(array(
+				':name' => $this->args[0],
+				':countrycode' => $this->args[1]
+			));
+			return self::exportGeoname(self::$qLatLngCountry->fetch(PDO::FETCH_ASSOC));
+		} else {
+			self::$qLatLng->execute(array(
+				':name' => $this->args[0]
+			));
+			return self::exportGeoname(self::$qLatLng->fetch(PDO::FETCH_ASSOC));
+		}
+	}
+
+	// Reverse geocoding - returns closest geonames within radius
 	public function nearest ($limit = 1, $within = 10000) {
 		self::$qNearest->execute(array(
 			':lng' => $this->args[1],
@@ -47,21 +38,6 @@ class Geocode {
 	public function nearestOne ($within = 10000) {
 		$nearest = $this->nearest(1, $within);
 		return count($nearest) ? $nearest[0] : false;
-	}
-
-	public function latlng () {
-		if (count($this->args) > 1) {
-			self::$qLatLngCountry->execute(array(
-				':name' => $this->args[0],
-				':countrycode' => $this->args[1]
-			));
-			return self::exportGeoname(self::$qLatLngCountry->fetch(PDO::FETCH_ASSOC));
-		} else {
-			self::$qLatLng->execute(array(
-				':name' => $this->args[0]
-			));
-			return self::exportGeoname(self::$qLatLng->fetch(PDO::FETCH_ASSOC));
-		}
 	}
 
 	private static $pdo, $qNearest, $qLatLng, $qLatLngCountry;

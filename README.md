@@ -21,7 +21,7 @@ Installation
 ```sql
 CREATE EXTENSION postgis
 ```
-3. Download and configure php-geocode. Edit the database settings in import.php.
+3. Download and configure php-geocode. Edit the database settings in import.php. Alternative datasets can be found at http://download.geonames.org/export/dump/.
 ```
 php import.php
 ```
