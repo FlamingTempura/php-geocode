@@ -9,9 +9,9 @@ php-geocode performs geocoding on your server, taking away that limitations.
 Requirements
 ------------
 
-PHP 5.3 (although may work on earlier if ZipArchive is installed)
-PostgreSQL
-PostGIS
+* PHP 5.3 (although may work on earlier if ZipArchive is installed)
+* PostgreSQL
+* PostGIS
 
 Installation
 ------------
@@ -46,6 +46,13 @@ php-geocode can be used to retrieve the latitude and longitude of cities and tow
 ```php
 $geocode = new Geocode('Eastleigh');
 var_dump($geocode->latlng());
+// array(5) {
+//   ["id"] => int(345150)
+//   ["name"] => string(9) "Eastleigh"
+//   ["countrycode"] => string(2) "GB"
+//   ["longitude"] => float(-1.35)
+//   ["latitude"] => float(50.96667)
+// }
 ```
 
 Town and city names may be used in different countries. You may specify an ISO-3166 2-letter country code to identify where to search for the place.
@@ -53,6 +60,15 @@ Town and city names may be used in different countries. You may specify an ISO-3
 ```php
 $geocode = new Geocode('Paris', 'FR'); // Hint that it's in France
 var_dump($geocode->latlng());
+
+// array(5) {
+//   ["id"] => int(352968)
+//   ["name"] => string(5) "Paris"
+//   ["countrycode"] => string(2) "FR"
+//   ["longitude"] => float(2.3488)
+//   ["latitude"] => float(48.85341)
+// }
+
 ```
 
 ### Reverse Geocoding
@@ -61,5 +77,28 @@ php-geocode may be used to identify the closest towns and cities to a latitude a
 
 ```php
 $geocode = new Geocode(48.857487, 2.351074);
-var_dump($geocode->nearestOne());
+var_dump($geocode->nearestOne()); // You may specify a radius to search in (in meters)
+// array(5) {
+//   ["id"] => int(352968)
+//   ["name"] => string(5) "Paris"
+//   ["countrycode"] => string(2) "FR"
+//   ["longitude"] => float(2.3488)
+//   ["latitude"] => float(48.85341)
+// }
+
+
+var_dump($geocode->nearest(4, 2000)); // Find closest 4 places within 2km
+
+// array(4) {
+//   [0] => array(5) {
+//     ["id"] => int(352968)
+//     ["name"] => string(5) "Paris"
+//     ["countrycode"] => string(2) "FR"
+//     ["longitude"] => float(2.3488)
+//     ["latitude"] => float(48.85341)
+//   }
+//   ...
+// }
+
+
 ```
