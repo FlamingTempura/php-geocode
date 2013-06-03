@@ -1,7 +1,7 @@
 php-geocode
 ===========
 
-php-geocode is a simple offline PHP geocoding library. It is useful where geocoding web services, such as Google Geocoding, are too limiting. For example, these web services often impose a limit on the number of requests and request rates, making it too limiting for batch processes.
+php-geocode is a simple offline PHP geocoding library. It is useful where geocoding web services, such as Google Geocoding, are too limiting. These web services often impose a limit on the number of requests and request rates, making it too limiting for batch processes.
 
 php-geocode performs geocoding on your server, taking away that limitations.
 
@@ -16,19 +16,37 @@ Requirements
 Installation
 ------------
 
-1. Install PostgreSQL and PostGIS.
-2. Create a database and add the PostGIS extension
+Install PostgreSQL and PostGIS.
+
+```bash
+sudo apt-get install postgres
+```
+
+Create a database and add the PostGIS extension
 ```sql
 CREATE EXTENSION postgis
 ```
-3. Download and configure php-geocode. Edit the database settings in import.php. Alternative datasets can be found at http://download.geonames.org/export/dump/.
+
+Download and configure php-geocode.
+```bash
+git clone git@github.com:FlamingTempura/php-geocode.git
 ```
+
+Edit the database and data source settings in import.php. Alternative datasets can be found at http://download.geonames.org/export/dump/ (default is cities1000.zip).
+```bash
+nano import.php
+```
+
+Run importer.php.
+
+```bash
 php import.php
 ```
-4. Once the data has been imported, you only need php-geocode.php.
 
 Usage
 -----
+
+Once the data has been imported, you only need php-geocode.php. Make sure you do not have import.php in your web root.
 
 ### Setup
 
@@ -60,7 +78,6 @@ Town and city names may be used in different countries. You may specify an ISO-3
 ```php
 $geocode = new Geocode('Paris', 'FR'); // Hint that it's in France
 var_dump($geocode->latlng());
-
 // array(5) {
 //   ["id"] => int(352968)
 //   ["name"] => string(5) "Paris"
