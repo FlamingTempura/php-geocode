@@ -1,7 +1,7 @@
 php-geocode
 ===========
 
-php-geocode is a simple offline PHP geocoding library. It is useful where geocoding web services, such as Google Geocoding, are too limiting. These web services often impose a limit on the number of requests and request rates, making it too limiting for batch processes.
+php-geocode is a simple offline PHP geocoding library. It is useful when geocoding web services (e.g., Google Geocoding) are too limiting. These web services often impose a limit on the number of requests and request rates, making it too limiting for batch processes.
 
 php-geocode performs geocoding on your server, taking away that limitations.
 
@@ -16,30 +16,29 @@ Requirements
 Installation
 ------------
 
-Install PostgreSQL and PostGIS.
-
-```bash
-sudo apt-get install postgres
-```
+Install PostgreSQL and PostGIS -- http://postgis.net/install/
 
 Create a database and add the PostGIS extension
-```sql
-CREATE EXTENSION postgis
+```
+sudo -u postgres psql postgres
+> CREATE DATABASE my_db OWNER my_user;
+sudo -u my_user psql my_db
+> CREATE EXTENSION postgis;
 ```
 
 Download and configure php-geocode.
-```bash
+```
 git clone git@github.com:FlamingTempura/php-geocode.git
 ```
 
 Edit the database and data source settings in import.php. Alternative datasets can be found at http://download.geonames.org/export/dump/ (default is cities1000.zip).
-```bash
+```
 nano import.php
 ```
 
-Run importer.php.
+Run import.php.
 
-```bash
+```
 php import.php
 ```
 
