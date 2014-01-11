@@ -1,73 +1,67 @@
 <?php
 
-/** START CONFIG **/
-
+// Imports a geonames dataset into the geostore
+// To run: php import.php
+// Use -a to add to existing geostore (i.e., don't wipe geostore)
 // geonames archive - list at http://download.geonames.org/export/dump/
-$url = 'http://download.geonames.org/export/dump/cities1000.zip';
 
-// postgres connection settings
-$host = 'localhost';
-$database = 'my_db';
-$username = 'my_username';
-$password = 'my_password';
+$tmpname = '/tmp/geonames.zip';  // temporary location for geonames archive
 
-// temporary location for geonames archive
-$tmpname = '/tmp/geonames.zip';
-
-/** END CONFIG **/
-
+$settings = getSettings();
+$ds = read('Dataset', 'http://download.geonames.org/export/dump/cities1000.zip');
+$host = read('Database host', 'localhost', $settings['host']);
+$db = read('Database name', $settings['db']);
+$user = read('Database username', $settings['user']);
+$pass = read('Password', $settings['pass']);
+$tbl = read('Table name', 'geoname', $settings['tbl']);
+saveSettings($host, $db, $user, $pass, $tbl);
 
 print('Connecting to database... ');
-$pdo = new PDO("pgsql:host=$host dbname=$database", $username, $password);
-if (!$pdo) { printlnred('FAILED.', true); }
-printlngreen('SUCCESS.');
+$pdo = new PDO("pgsql:host=$host dbname=$db", $user, $pass);
+abortOn(!$pdo, 'FAILED.', true);
+success('SUCCESS.');
 
-print('Fetching ' . $url . ' ');
-file_put_contents($tmpname, fopen($url, 'r'));
-printlngreen('DONE.');
+print('Fetching ' . $ds . ' ');
+file_put_contents($tmpname, fopen($ds, 'r'));
+success('DONE.');
 
 print('Extracting... ');
 $zip = zip_open($tmpname);
-if (!$zip) { printlnred('FAILED.', true); }
+abortOn(!$zip, 'FAILED.', true);
 $zip_entry = zip_read($zip);
 zip_entry_open($zip, $zip_entry, 'r');
 $lines = zip_entry_read($zip_entry, zip_entry_filesize($zip_entry));
-printlngreen('DONE.');
+success('DONE.');
 
-// Does the geoname table exist?
-$r = $pdo->query("SELECT * FROM pg_tables WHERE tablename = 'geoname'");
-if ($r->fetch()) {
-	print('This will wipe the current geostore - OK to continue? [Y/n] ');
-	$continue = readline();
-	if (strtolower($continue) !== 'y') {
-		printlnred('ABORTED.', true);
+$r = $pdo->query("SELECT * FROM pg_tables WHERE tablename = '$tbl'");
+if ($r->fetch()) {		// Does the table exist?
+	if (count(getopt('a')) === 0) {
+		$continue = read('Current geostore will be wiped - continue? [Y/n]');
+		abortOn(strtolower($continue) !== 'y', 'ABORTED.', true);
+		print('Wiping geostore... ');
+		$pdo->exec('TRUNCATE $tbl');
 	}
-	print('Wiping geostore... ');
-	$pdo->exec('TRUNCATE geoname');
 } else {
 	print('Creating table... ');
-	$pdo->exec('
-		CREATE TABLE geoname (
-			id bigserial primary key,
-			name varchar(200) NOT NULL,
-			countrycode varchar(2) NOT NULL,
-			coordinate geography(Point,4326)
-		)');
+	$pdo->exec("CREATE TABLE $tbl (id bigserial primary key,
+		name varchar(200) NOT NULL, countrycode varchar(2) NOT NULL,
+		coordinate geography(Point,4326) )");
 }
-printlngreen('DONE.');
+success('DONE.');
 
 $lines = explode("\n", $lines);
 $count = count($lines);
 
 print('Inserting ' . $count . ' geonames...   0%');
-$insert = $pdo->prepare('
-	INSERT INTO geoname (name, countrycode, coordinate)
-		VALUES (:name, :countrycode, ST_MakePoint(:lng, :lat))');
+$insert = $pdo->prepare("INSERT INTO $tbl (name, countrycode, coordinate)
+	VALUES (:name, :countrycode, ST_MakePoint(:lng, :lat))");
 $timestart = microtime(true);
 $i = $count - 1;
 $percent = 0;
 while ($i--) {
 	$line = explode("\t", $lines[$i], 10);
+	var_dump($line);
+	die();
 	$insert->execute(array(
 		':name' => $line[1],
 		':countrycode' => $line[8],
@@ -81,18 +75,32 @@ while ($i--) {
 	}
 }
 print(' (took ' . round(microtime(true) - $timestart, 4) . 's.) ');
-printlngreen('Done.');
+success('DONE.');
 
 zip_close($zip);
 print('Cleaning up... ');
 unlink($tmpname);
-printlngreen('DONE.');
-printlngreen('Geostore import was successful.');
+success("DONE.\r\nGeostore import was successful.");
 
-function printlngreen ($str) {
-	print("\e[1m\e[32m$str\e[0m\r\n");
-}
-function printlnred ($str, $die = false) {
+function success ($str) { print("\e[1m\e[32m$str\e[0m\r\n"); }
+function abortOn ($condition, $str, $die = false) {
+	if (!$condition) { return; }
 	print("\e[1m\e[31m$str\e[0m\r\n");
 	if ($die) { die(); }
+}
+function read ($msg, $default = null) {
+	print($msg . ($default ? " [$default]" : '') . ': ');
+	$rtn = readline();
+	if (!$rtn && is_null($default)) { return read($msg, $default); }
+	return $rtn ?: $default;
+}
+function saveSettings ($h, $db, $user, $pass, $tbl) {
+	file_put_contents('.settings', serialize(array('host' => $h, 'db' => $db,
+		'user' => $user, 'pass' => $pass, 'tbl' => $tbl)));
+}
+function getSettings () {
+	return file_exists('.settings') ?
+		unserialize(file_get_contents('.settings')) :
+		array('host' => null, 'db' => null, 'user' => null,
+			'pass' => null, 'tbl' => null);
 }
